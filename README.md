@@ -15,6 +15,7 @@
 body {
   margin: 0;
   min-height: 100vh;
+  padding-bottom: 20px;
   background: radial-gradient(circle at center, #102c46, #030711 75%);
   color: #e7f8ff;
   font-family: Arial, sans-serif;
@@ -49,21 +50,24 @@ header h1 {
   border-radius: 50%;
   color: #35d9ff;
   font-size: 65px;
-  box-shadow: 0 0 25px #087cae,
-              inset 0 0 25px #087cae;
+  box-shadow: 0 0 25px #087cae, inset 0 0 25px #087cae;
   animation: pulse 3s infinite;
+  transition: 0.3s;
 }
 
 .circle.listening {
   border-color: #58f5a5;
-  box-shadow: 0 0 40px #58f5a5,
-              inset 0 0 25px #58f5a5;
+  box-shadow: 0 0 40px #58f5a5, inset 0 0 25px #58f5a5;
+}
+
+.circle.speaking {
+  border-color: #ffcf5a;
+  box-shadow: 0 0 40px #ffcf5a, inset 0 0 25px #ffcf5a;
 }
 
 @keyframes pulse {
   50% {
-    box-shadow: 0 0 45px #22cfff,
-                inset 0 0 35px #087cae;
+    box-shadow: 0 0 45px #22cfff, inset 0 0 35px #087cae;
   }
 }
 
@@ -75,6 +79,7 @@ h2 {
 #status {
   color: #58f5a5;
   font-size: 13px;
+  min-height: 18px;
 }
 
 #chat {
@@ -208,7 +213,6 @@ footer {
 </div>
 
 <div class="controls">
-
   <input
     id="message"
     type="text"
@@ -217,7 +221,6 @@ footer {
   >
 
   <button onclick="sendMessage()">SEND</button>
-
   <br>
 
   <button onclick="listen()">🎙 SPEAK</button>
@@ -229,12 +232,10 @@ footer {
   <button class="danger" onclick="clearChat()">
     CLEAR CHAT
   </button>
-
 </div>
 
 <div class="commands">
   <h3>JARVIS COMMAND CENTER</h3>
-
   Hello | Hey JARVIS | Your name<br>
   Time | Date | Status | Help<br>
   Calculate 25*4<br>
@@ -259,26 +260,22 @@ const statusText = document.getElementById("status");
 const core = document.getElementById("core");
 
 
-// ADD MESSAGE
+// ADD MESSAGE SAFELY
 function addMessage(sender, text) {
-
   const message = document.createElement("p");
   const label = document.createElement("b");
 
   label.textContent = sender + ": ";
-
   message.appendChild(label);
   message.appendChild(document.createTextNode(text));
 
   chat.appendChild(message);
-
   chat.scrollTop = chat.scrollHeight;
 }
 
 
-// ADD CLICKABLE SEARCH LINK
+// ADD SEARCH LINK
 function addSearchLink(title, url) {
-
   const message = document.createElement("p");
   const label = document.createElement("b");
   const link = document.createElement("a");
@@ -297,12 +294,9 @@ function addSearchLink(title, url) {
 }
 
 
-// SPEAK RESPONSE
+// VOICE RESPONSE
 function speak(text) {
-
-  if (!("speechSynthesis" in window)) {
-    return;
-  }
+  if (!("speechSynthesis" in window)) return;
 
   speechSynthesis.cancel();
 
@@ -314,9 +308,16 @@ function speak(text) {
 
   speech.onstart = function() {
     statusText.textContent = "JARVIS is speaking...";
+    core.classList.add("speaking");
   };
 
   speech.onend = function() {
+    statusText.textContent = "Awaiting your command...";
+    core.classList.remove("speaking");
+  };
+
+  speech.onerror = function() {
+    core.classList.remove("speaking");
     statusText.textContent = "Awaiting your command...";
   };
 
@@ -324,80 +325,58 @@ function speak(text) {
 }
 
 
-// JARVIS RESPONSE
+// JARVIS REPLY
 function reply(text) {
-
   addMessage("JARVIS", text);
   speak(text);
-
 }
 
 
-// STOP SPEECH
+// STOP VOICE
 function stopSpeaking() {
-
   if ("speechSynthesis" in window) {
     speechSynthesis.cancel();
   }
 
+  core.classList.remove("speaking");
   statusText.textContent = "Voice stopped.";
 }
 
 
 // CLEAR CHAT
 function clearChat() {
-
   stopSpeaking();
-
   chat.innerHTML = "";
 
   addMessage(
     "JARVIS",
     "Conversation cleared. Systems are ready."
   );
-
 }
 
 
 // GOOGLE SEARCH
 function searchGoogle(query) {
-
   const url =
     "https://www.google.com/search?q=" +
     encodeURIComponent(query);
 
   addSearchLink("Open Google results for " + query, url);
-
 }
 
 
 // WIKIPEDIA SEARCH
 function searchWikipedia(topic) {
-
   const url =
     "https://en.wikipedia.org/w/index.php?search=" +
     encodeURIComponent(topic);
 
   addSearchLink("Open Wikipedia results for " + topic, url);
-
-}
-
-
-// WEATHER SEARCH
-function searchWeather(city) {
-
-  const url =
-    "https://www.google.com/search?q=" +
-    encodeURIComponent("weather in " + city);
-
-  addSearchLink("Check weather for " + city, url);
-
 }
 
 
 // SAFE CALCULATOR
 function calculate(expression) {
-
   const clean = expression.replace(/\s/g, "");
 
   const tokens = clean.match(/\d*\.?\d+|[()+\-*/%]/g);
@@ -409,14 +388,12 @@ function calculate(expression) {
   let position = 0;
 
   function factor() {
-
     const token = tokens[position++];
 
     if (token === "+") return factor();
     if (token === "-") return -factor();
 
     if (token === "(") {
-
       const value = sum();
 
       if (tokens[position++] !== ")") {
@@ -436,7 +413,6 @@ function calculate(expression) {
   }
 
   function term() {
-
     let value = factor();
 
     while (
@@ -444,7 +420,6 @@ function calculate(expression) {
       tokens[position] === "/" ||
       tokens[position] === "%"
     ) {
-
       const operator = tokens[position++];
       const next = factor();
 
@@ -458,27 +433,23 @@ function calculate(expression) {
       if (operator === "*") value *= next;
       if (operator === "/") value /= next;
       if (operator === "%") value %= next;
-
     }
 
     return value;
   }
 
   function sum() {
-
     let value = term();
 
     while (
       tokens[position] === "+" ||
       tokens[position] === "-"
     ) {
-
       const operator = tokens[position++];
       const next = term();
 
       if (operator === "+") value += next;
       if (operator === "-") value -= next;
-
     }
 
     return value;
@@ -497,18 +468,102 @@ function calculate(expression) {
 }
 
 
+// LIVE WEATHER
+async function getLiveWeather(city) {
+  statusText.textContent = "Checking live weather...";
+
+  try {
+    const geoURL =
+      "https://geocoding-api.open-meteo.com/v1/search?name=" +
+      encodeURIComponent(city) +
+      "&count=1&language=en&format=json";
+
+    const geoResponse = await fetch(geoURL);
+
+    if (!geoResponse.ok) {
+      throw new Error("Location request failed");
+    }
+
+    const geoData = await geoResponse.json();
+
+    if (!geoData.results || geoData.results.length === 0) {
+      reply("I couldn't find that city. Please try another city name.");
+      return;
+    }
+
+    const place = geoData.results[0];
+
+    const weatherURL =
+      `https://api.open-meteo.com/v1/forecast?latitude=${place.latitude}&longitude=${place.longitude}&current=temperature_2m,relative_humidity_2m,apparent_temperature,wind_speed_10m,weather_code&timezone=auto`;
+
+    const weatherResponse = await fetch(weatherURL);
+
+    if (!weatherResponse.ok) {
+      throw new Error("Weather request failed");
+    }
+
+    const weatherData = await weatherResponse.json();
+    const current = weatherData.current;
+
+    if (!current) {
+      throw new Error("Weather data unavailable");
+    }
+
+    const weatherDescriptions = {
+      0: "Clear sky",
+      1: "Mainly clear",
+      2: "Partly cloudy",
+      3: "Overcast",
+      45: "Foggy",
+      48: "Depositing rime fog",
+      51: "Light drizzle",
+      53: "Moderate drizzle",
+      55: "Dense drizzle",
+      61: "Slight rain",
+      63: "Moderate rain",
+      65: "Heavy rain",
+      71: "Slight snowfall",
+      73: "Moderate snowfall",
+      75: "Heavy snowfall",
+      80: "Rain showers",
+      81: "Moderate rain showers",
+      82: "Heavy rain showers",
+      95: "Thunderstorm",
+      96: "Thunderstorm with hail",
+      99: "Heavy thunderstorm with hail"
+    };
+
+    const description =
+      weatherDescriptions[current.weather_code] ||
+      "Current conditions unavailable";
+
+    const report =
+      `Weather in ${place.name}: ${description}. ` +
+      `Temperature: ${current.temperature_2m}°C. ` +
+      `Feels like: ${current.apparent_temperature}°C. ` +
+      `Humidity: ${current.relative_humidity_2m}%. ` +
+      `Wind speed: ${current.wind_speed_10m} km/h.`;
+
+    reply(report);
+
+  } catch (error) {
+    console.error("Weather error:", error);
+    reply("Sorry, I couldn't retrieve live weather. Check your internet and try again.");
+  } finally {
+    statusText.textContent = "Awaiting your command...";
+  }
+}
+
+
 // MAIN COMMAND SYSTEM
 function sendMessage() {
-
   const original = input.value.trim();
   const command = original.toLowerCase();
 
   if (!command) return;
 
   stopSpeaking();
-
   addMessage("YOU", original);
-
   input.value = "";
 
   // GREETINGS
@@ -518,86 +573,164 @@ function sendMessage() {
     command.includes("good morning") ||
     command.includes("good evening")
   ) {
-
     reply("Hello! JARVIS is ready. What can I do for you?");
-
   }
 
   // NAME
   else if (command.includes("your name")) {
-
     reply("I am JARVIS, your personal smart assistant.");
-
   }
 
   // TIME
-  else if (command.includes("time")) {
-
+  else if (command === "time" || command.includes("what time")) {
     reply("The current time is " +
       new Date().toLocaleTimeString("en-IN"));
-
   }
 
   // DATE
-  else if (command.includes("date")) {
-
+  else if (command === "date" || command.includes("today's date")) {
     reply("Today's date is " +
       new Date().toLocaleDateString("en-IN"));
-
   }
 
   // STATUS
   else if (command.includes("status")) {
-
-    reply("All basic systems are operational. Voice and command systems are ready.");
-
+    reply("All basic systems are operational. Voice, calculator and search are ready.");
   }
 
   // CALCULATOR
   else if (command.startsWith("calculate ")) {
-
     const expression = original.substring(10).trim();
 
     try {
-
       const result = calculate(expression);
-
       reply("The answer is " + result);
-
     } catch (error) {
-
       reply("Please enter a valid calculation.");
-
     }
-
   }
 
   // WIKIPEDIA
   else if (command.startsWith("wikipedia ")) {
-
     const topic = original.substring(10).trim();
 
     if (topic) {
-
       reply("I found a Wikipedia search for " + topic);
       searchWikipedia(topic);
-
     } else {
-
       reply("Please tell me a topic.");
-
     }
-
   }
 
-  // WEATHER
+  // LIVE WEATHER
   else if (command.startsWith("weather ")) {
-
     const city = original.substring(8).trim();
 
     if (city) {
+      getLiveWeather(city);
+    } else {
+      reply("Please tell me a city.");
+    }
+  }
 
-      reply("Here is a weather search for " + city);
+  // GOOGLE SEARCH
+  else if (command.startsWith("search ")) {
+    const query = original.substring(7).trim();
+
+    if (query) {
+      reply("Here are your Google search results.");
+      searchGoogle(query);
+    } else {
+      reply("Please tell me what to search.");
+    }
+  }
+
+  // HELP
+  else if (command.includes("help")) {
+    reply("Try hello, time, date, status, calculate, search, Wikipedia or weather.");
+  }
+
+  // GENERAL QUESTIONS
+  else if (
+    command.startsWith("who is ") ||
+    command.startsWith("what is ") ||
+    command.startsWith("where is ") ||
+    command.startsWith("why ") ||
+    command.startsWith("how ") ||
+    command.startsWith("when ")
+  ) {
+    reply("I can help you look that up. Here are some search results.");
+    searchGoogle(original);
+  }
+
+  // UNKNOWN COMMAND
+  else {
+    reply("I don't know that command yet. Type help to see what I can do.");
+  }
+}
+
+
+// ENTER TO SEND
+input.addEventListener("keydown", function(event) {
+  if (event.key === "Enter") {
+    sendMessage();
+  }
+});
+
+
+// VOICE RECOGNITION
+function listen() {
+  const Recognition =
+    window.SpeechRecognition ||
+    window.webkitSpeechRecognition;
+
+  if (!Recognition) {
+    statusText.textContent =
+      "Voice recognition is not supported. Try Chrome.";
+    return;
+  }
+
+  const recognition = new Recognition();
+
+  recognition.lang = "en-IN";
+  recognition.interimResults = false;
+  recognition.maxAlternatives = 1;
+
+  recognition.onstart = function() {
+    statusText.textContent = "Listening...";
+    core.classList.add("listening");
+  };
+
+  recognition.onresult = function(event) {
+    const spokenText = event.results[0][0].transcript;
+    input.value = spokenText;
+    sendMessage();
+  };
+
+  recognition.onerror = function(event) {
+    statusText.textContent = "Voice error: " + event.error;
+  };
+
+  recognition.onend = function() {
+    core.classList.remove("listening");
+
+    if (statusText.textContent === "Listening...") {
+      statusText.textContent = "Awaiting your command...";
+    }
+  };
+
+  try {
+    recognition.start();
+  } catch (error) {
+    statusText.textContent = "Please try speaking again.";
+  }
+}
+
+</script>
+
+</body>
+</html>
+ly("Here is a weather search for " + city);
       searchWeather(city);
 
     } else {
